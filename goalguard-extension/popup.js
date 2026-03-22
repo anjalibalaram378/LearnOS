@@ -30,5 +30,5 @@ toggleBtn.addEventListener('click', () => {
 });
 
 document.getElementById('openApp').addEventListener('click', () => {
-  chrome.tabs.create({ url: 'http://localhost:3000/goalguard' });
+  chrome.tabs.create({ url: 'https://learn-os.vercel.app/goalguard' });
 });

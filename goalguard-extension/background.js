@@ -55,7 +55,8 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     });
 
     // Redirect to GoalGuard page in the app
-    const blocked = 'http://localhost:3000/goalguard?blocked=' + encodeURIComponent(entry.site);
+    const APP_URL = 'https://learn-os.vercel.app';
+    const blocked = APP_URL + '/goalguard?blocked=' + encodeURIComponent(entry.site);
     chrome.tabs.update(tabId, { url: blocked });
   });
 });

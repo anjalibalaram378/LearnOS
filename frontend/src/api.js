@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE = 'http://localhost:8001';
+const BASE = process.env.REACT_APP_API_URL || 'http://localhost:8001';
 
 export const createUser = (name, email) =>
   axios.post(`${BASE}/users/`, { name, email });
@@ -36,7 +36,7 @@ export const getGoalGuardEvents = (userId) =>
   axios.get(`${BASE}/goalguard/events/${userId}`).catch(() => null);
 
 // ── StudyHack Challenge Server (port 4000) ────────────────────────────────
-const CH = 'http://localhost:4000';
+const CH = process.env.REACT_APP_CHALLENGE_URL || 'http://localhost:4000';
 
 export const createChallenge = (data) =>
   axios.post(`${CH}/api/challenge/create`, data).catch(() => null);
