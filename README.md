@@ -145,13 +145,13 @@ curl -X POST http://localhost:4000/api/challenge/create \
 
 ## 👥 Team
 
-Built at **[Hackathon Name]** — 2026
+Built at **[Anthropic Hackathon at ASU]** — 2026
 
 | Role | Responsibility |
 |---|---|
-| Person 1 | AI Engine & Backend — PDF parsing, Claude integration, quiz generation |
-| Person 2 | Frontend & UX — Study dashboard, flashcard UI, daily goals |
-| Person 3 | Social Layer & Pitch — Challenge system, leaderboard, GoalGuard |
+| Anjali | AI Engine & Backend — PDF parsing, Claude integration, quiz generation |
+| Prajeet + Anjali | Frontend & UX — Study dashboard, flashcard UI, daily goals |
+| Lasya | Social Layer & Pitch — Challenge system, leaderboard, GoalGuard |
 
 ---
 
