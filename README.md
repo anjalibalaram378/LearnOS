@@ -1,5 +1,5 @@
 # LearnOS 🧠⚡
-
+Anthropic Hackathon 2026 at Arizona State University
 > **Apple Fitness. For Your Brain.**
 
 Upload any study material. Get a full AI-generated learning plan. Challenge a friend to a fair sprint. Stay consistent. Win.
