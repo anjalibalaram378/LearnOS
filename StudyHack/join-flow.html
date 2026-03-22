@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LearnOS — Join Challenge</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: #2a2a3a;
+    --accent: #00ff88;
+    --accent2: #7b61ff;
+    --text: #f0f0f5;
+    --muted: #6b6b80;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  .container {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    animation: fadeUp 0.5s ease forwards;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    text-align: center;
+    letter-spacing: -0.02em;
+  }
+
+  .logo span { color: var(--accent); }
+
+  /* Loading state */
+  #screen-loading {
+    text-align: center;
+    padding: 3rem;
+  }
+
+  .spinner {
+    width: 40px; height: 40px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 1rem;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-text {
+    color: var(--muted);
+    font-size: 0.82rem;
+  }
+
+  /* Challenge preview card */
+  #screen-preview { display: none; }
+  #screen-success { display: none; }
+  #screen-error { display: none; }
+
+  .challenge-preview {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .preview-header {
+    background: linear-gradient(135deg, rgba(0,255,136,0.1), rgba(123,97,255,0.1));
+    border-bottom: 1px solid var(--border);
+    padding: 2rem;
+    text-align: center;
+  }
+
+  .challenge-emoji {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .challenge-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.5rem;
+    margin-bottom: 0.3rem;
+  }
+
+  .challenge-by {
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+
+  .challenge-by strong { color: var(--accent); }
+
+  .preview-body {
+    padding: 1.5rem;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .info-item {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 0.9rem;
+    text-align: center;
+  }
+
+  .info-val {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+
+  .info-key {
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .fair-play-note {
+    background: rgba(0,255,136,0.06);
+    border: 1px solid rgba(0,255,136,0.15);
+    border-radius: 8px;
+    padding: 1rem;
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+  }
+
+  .fair-play-note strong { color: var(--accent); }
+
+  .name-input-row {
+    margin-bottom: 1.2rem;
+  }
+
+  label {
+    display: block;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.9rem;
+    padding: 0.85rem 1rem;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input:focus { border-color: var(--accent); }
+
+  .btn {
+    width: 100%;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    padding: 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    border: none;
+    letter-spacing: 0.05em;
+    transition: all 0.2s;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+    font-weight: 500;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: #00e07a;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,255,136,0.3);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Success screen */
+  .success-card {
+    background: var(--surface);
+    border: 1px solid rgba(0,255,136,0.3);
+    border-radius: 16px;
+    padding: 2.5rem;
+    text-align: center;
+  }
+
+  .success-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  @keyframes popIn {
+    from { transform: scale(0); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .success-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.6rem;
+    margin-bottom: 0.5rem;
+    color: var(--accent);
+  }
+
+  .success-sub {
+    color: var(--muted);
+    font-size: 0.82rem;
+    line-height: 1.7;
+    margin-bottom: 2rem;
+  }
+
+  .content-preview {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 1.2rem;
+    text-align: left;
+    margin-bottom: 1.5rem;
+  }
+
+  .content-preview-title {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 0.8rem;
+  }
+
+  .content-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.8rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .content-item:last-child { border-bottom: none; }
+  .content-dot { color: var(--accent); }
+
+  .redirect-note {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 1rem;
+  }
+
+  /* Error screen */
+  .error-card {
+    background: var(--surface);
+    border: 1px solid rgba(255,107,107,0.3);
+    border-radius: 16px;
+    padding: 2.5rem;
+    text-align: center;
+  }
+
+  .error-icon { font-size: 3rem; margin-bottom: 1rem; }
+
+  .error-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+    color: #ff6b6b;
+    margin-bottom: 0.5rem;
+  }
+
+  .error-sub {
+    color: var(--muted);
+    font-size: 0.82rem;
+    line-height: 1.7;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="logo">Learn<span>OS</span></div>
+
+  <!-- Loading -->
+  <div id="screen-loading">
+    <div class="spinner"></div>
+    <div class="loading-text">Loading challenge details…</div>
+  </div>
+
+  <!-- Preview + Join -->
+  <div id="screen-preview">
+    <div class="challenge-preview">
+      <div class="preview-header">
+        <div class="challenge-emoji">⚔️</div>
+        <div class="challenge-title" id="p-title">—</div>
+        <div class="challenge-by">challenged by <strong id="p-creator">—</strong></div>
+      </div>
+      <div class="preview-body">
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-val" id="p-duration">—</span>
+            <div class="info-key">Days</div>
+          </div>
+          <div class="info-item">
+            <span class="info-val" id="p-accuracy">—</span>
+            <div class="info-key">Target Accuracy</div>
+          </div>
+          <div class="info-item" style="grid-column: span 2">
+            <span class="info-val" id="p-topic" style="color:var(--accent2)">—</span>
+            <div class="info-key">Topic</div>
+          </div>
+        </div>
+
+        <div class="fair-play-note">
+          ⚡ <strong>Fair play guaranteed.</strong> You'll receive the exact same AI-generated flashcards and quizzes as your opponent. The only variable is consistency.
+        </div>
+
+        <div class="name-input-row">
+          <label>Your Name</label>
+          <input type="text" id="opponent-name" placeholder="Enter your name to join" />
+        </div>
+
+        <button class="btn btn-primary" id="join-btn" onclick="joinChallenge()">
+          Accept Challenge & Start
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success -->
+  <div id="screen-success">
+    <div class="success-card">
+      <div class="success-icon">🎯</div>
+      <div class="success-title">You're In!</div>
+      <div class="success-sub" id="success-msg">Challenge accepted. Your content is ready.</div>
+      <div class="content-preview">
+        <div class="content-preview-title">Your AI-Generated Content</div>
+        <div class="content-item"><span class="content-dot">▸</span> <span id="flashcard-count">—</span> flashcards</div>
+        <div class="content-item"><span class="content-dot">▸</span> <span id="quiz-count">—</span> quiz questions</div>
+        <div class="content-item"><span class="content-dot">▸</span> Daily goal tracking enabled</div>
+        <div class="content-item"><span class="content-dot">▸</span> Leaderboard live</div>
+      </div>
+      <button class="btn btn-primary" onclick="goToDashboard()">Go to My Dashboard →</button>
+      <div class="redirect-note">You'll be redirected automatically in <span id="countdown">5</span>s</div>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div id="screen-error">
+    <div class="error-card">
+      <div class="error-icon">⚠️</div>
+      <div class="error-title">Challenge Not Found</div>
+      <div class="error-sub" id="error-msg">This invite link may have expired or the challenge is already full.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API = 'http://localhost:4000'; // swap to production URL
+
+  // Extract challenge ID from URL: /join/CHALLENGE_ID
+  // For demo, default to a mock ID
+  const pathParts = window.location.pathname.split('/');
+  const challengeId = pathParts[pathParts.length - 1] || 'demo';
+
+  let challengeData = null;
+
+  // ── On load: fetch challenge details ──
+  async function loadChallenge() {
+    try {
+      // For hackathon demo — use mock data if API not running
+      await new Promise(r => setTimeout(r, 800)); // simulate network
+
+      // Try real API first
+      let data;
+      try {
+        const res = await fetch(`${API}/api/challenge/${challengeId}`);
+        if (!res.ok) throw new Error('not found');
+        data = await res.json();
+      } catch {
+        // Fall back to mock for demo
+        data = {
+          id: challengeId,
+          title: 'DSA — Arrays & Hashing',
+          topic: 'Data Structures & Algorithms',
+          duration: 7,
+          accuracyTarget: 80,
+          status: 'pending',
+          creatorName: 'Your Friend',
+        };
+      }
+
+      if (data.status === 'active') {
+        showError('This challenge already has an opponent. The sprint has started!');
+        return;
+      }
+
+      challengeData = data;
+      showPreview(data);
+    } catch (err) {
+      showError('Could not load challenge. Please check your link and try again.');
+    }
+  }
+
+  function showPreview(data) {
+    document.getElementById('p-title').textContent = data.title;
+    document.getElementById('p-creator').textContent = data.creatorName;
+    document.getElementById('p-duration').textContent = data.duration;
+    document.getElementById('p-accuracy').textContent = data.accuracyTarget + '%';
+    document.getElementById('p-topic').textContent = data.topic;
+
+    hide('screen-loading');
+    show('screen-preview');
+  }
+
+  // ── Join challenge ──
+  async function joinChallenge() {
+    const name = document.getElementById('opponent-name').value.trim();
+    if (!name) {
+      document.getElementById('opponent-name').style.borderColor = '#ff6b6b';
+      document.getElementById('opponent-name').focus();
+      return;
+    }
+
+    const btn = document.getElementById('join-btn');
+    btn.disabled = true;
+    btn.textContent = 'Joining…';
+
+    try {
+      let result;
+      try {
+        const res = await fetch(`${API}/api/challenge/${challengeId}/join`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ opponentName: name }),
+        });
+        result = await res.json();
+        if (!res.ok) throw new Error(result.error);
+      } catch {
+        // Mock success for demo
+        result = {
+          success: true,
+          sharedContent: {
+            flashcards: Array(20).fill(null),
+            quizzes: Array(10).fill(null),
+          },
+        };
+      }
+
+      // Save keys for both LearnOS and React app
+      localStorage.setItem('learnos_player', name);
+      localStorage.setItem('learnos_challenge', challengeId);
+      localStorage.setItem('user_name', name);
+      localStorage.setItem('challenge_id', challengeId);
+      if (challengeData?.sessionId) {
+        localStorage.setItem('session_id', challengeData.sessionId);
+        localStorage.setItem('total_days', challengeData.duration || 7);
+        localStorage.setItem('current_day', '1');
+      }
+
+      showSuccess(name, result.sharedContent);
+    } catch (err) {
+      showError(err.message || 'Failed to join. Please try again.');
+    }
+  }
+
+  function showSuccess(name, content) {
+    document.getElementById('success-msg').textContent =
+      `Welcome, ${name}! You and your opponent have the same content — may the most consistent learner win.`;
+    document.getElementById('flashcard-count').textContent = content?.flashcards?.length || 20;
+    document.getElementById('quiz-count').textContent = content?.quizzes?.length || 10;
+
+    hide('screen-preview');
+    show('screen-success');
+
+    // Countdown redirect
+    let count = 5;
+    const interval = setInterval(() => {
+      count--;
+      document.getElementById('countdown').textContent = count;
+      if (count <= 0) {
+        clearInterval(interval);
+        goToDashboard();
+      }
+    }, 1000);
+  }
+
+  function showError(msg) {
+    document.getElementById('error-msg').textContent = msg;
+    hide('screen-loading');
+    hide('screen-preview');
+    show('screen-error');
+  }
+
+  function goToDashboard() {
+    window.location.href = 'http://localhost:3000/dashboard';
+  }
+
+  function show(id) { document.getElementById(id).style.display = 'block'; }
+  function hide(id) { document.getElementById(id).style.display = 'none'; }
+
+  // Start
+  loadChallenge();
+</script>
+</body>
+</html>

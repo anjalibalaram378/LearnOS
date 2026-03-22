@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>GoalGuard — Blocked</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a0f;
+      color: #f0f0f5;
+      font-family: 'DM Mono', monospace;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .card {
+      background: #111118;
+      border: 1px solid #2a2a3a;
+      border-radius: 24px;
+      padding: 3rem 2.5rem;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+    }
+    .top-bar {
+      position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, #ef4444, #f59e0b, #ef4444);
+    }
+    .shield { font-size: 72px; margin-bottom: 1.5rem; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 2rem; font-weight: 800;
+      margin-bottom: 0.5rem;
+    }
+    .blocked-site {
+      display: inline-block;
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.3);
+      color: #ef4444;
+      padding: 6px 16px; border-radius: 20px;
+      font-size: 13px; font-weight: 600;
+      margin: 1rem 0 1.5rem;
+    }
+    p { color: #6b6b80; font-size: 14px; line-height: 1.8; margin-bottom: 2rem; }
+    .goals { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 2rem; }
+    .goal-tag {
+      padding: 8px 16px; border-radius: 8px;
+      background: rgba(0,255,136,0.08);
+      border: 1px solid rgba(0,255,136,0.25);
+      color: #00ff88; font-size: 13px;
+    }
+    .buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn-back {
+      background: #00ff88; color: #000; border: none;
+      font-family: 'DM Mono', monospace; font-weight: 600;
+      font-size: 14px; padding: 12px 28px; border-radius: 10px;
+      cursor: pointer; box-shadow: 0 4px 20px rgba(0,255,136,0.35);
+      text-decoration: none; display: inline-block;
+    }
+    .btn-back:hover { background: #00e87a; }
+    .btn-ignore {
+      background: transparent; color: #6b6b80;
+      border: 1px solid #2a2a3a;
+      font-family: 'DM Mono', monospace;
+      font-size: 13px; padding: 12px 20px; border-radius: 10px;
+      cursor: pointer;
+    }
+    .btn-ignore:hover { color: #f0f0f5; border-color: #ef4444; }
+    .stats {
+      margin-top: 2rem; padding: 14px;
+      background: #0a0a0f; border-radius: 10px;
+      font-size: 12px; color: #6b6b80;
+    }
+    .stats span { color: #ef4444; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="top-bar"></div>
+    <div class="shield">🛡️</div>
+    <h1>Goal<span style="color:#00ff88">Guard</span></h1>
+    <div class="blocked-site" id="siteLabel">site blocked</div>
+    <p>This site was flagged as a distraction.<br>You have goals to crush — stay on track!</p>
+    <div class="goals" id="goalsList"></div>
+    <div class="buttons">
+      <a class="btn-back" href="http://localhost:3000/goalguard">🎯 Back to Goals</a>
+      <button class="btn-ignore" id="ignoreBtn">Ignore once</button>
+    </div>
+    <div class="stats">Blocked by <span>GoalGuard</span> · <span id="blockCount">0</span> blocks this session</div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const site = params.get('site') || 'this site';
+    let goals = [];
+    try { goals = JSON.parse(params.get('goals') || '[]'); } catch {}
+
+    document.getElementById('siteLabel').textContent = '🚫 ' + site;
+
+    const goalsList = document.getElementById('goalsList');
+    if (goals.length > 0) {
+      goals.forEach(g => {
+        const el = document.createElement('div');
+        el.className = 'goal-tag';
+        el.textContent = '🎯 ' + g;
+        goalsList.appendChild(el);
+      });
+    }
+
+    // Block count from storage
+    chrome.storage.local.get(['gg_log'], (data) => {
+      const log = data.gg_log || [];
+      const count = log.filter(e => e.blocked).length;
+      document.getElementById('blockCount').textContent = count;
+    });
+
+    // Ignore once — go back
+    document.getElementById('ignoreBtn').onclick = () => {
+      history.back();
+    };
+  </script>
+</body>
+</html>

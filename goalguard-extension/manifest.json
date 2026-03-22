@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "GoalGuard by LearnOS",
+  "version": "1.0",
+  "description": "Blocks distracting sites and keeps you aligned with your study goals.",
+  "permissions": ["tabs", "storage", "notifications"],
+  "host_permissions": [
+    "*://*.instagram.com/*",
+    "*://*.facebook.com/*",
+    "*://*.tiktok.com/*",
+    "*://*.twitter.com/*",
+    "*://*.x.com/*",
+    "*://*.netflix.com/*",
+    "*://*.snapchat.com/*",
+    "*://*.pinterest.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "48": "icon.png"
+    }
+  },
+  "icons": {
+    "48": "icon.png"
+  }
+}

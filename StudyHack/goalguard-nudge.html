@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LearnOS — GoalGuard Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: #2a2a3a;
+    --accent: #00ff88;
+    --accent2: #7b61ff;
+    --accent3: #ff6b6b;
+    --text: #f0f0f5;
+    --muted: #6b6b80;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    padding: 2rem;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  /* ── Demo page to simulate distraction ── */
+  .demo-page {
+    position: relative;
+    z-index: 1;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .demo-header {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .demo-header span { color: var(--accent); }
+
+  .demo-sub {
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+  }
+
+  .demo-controls {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+
+  .btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    padding: 0.65rem 1.2rem;
+    border-radius: 6px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    letter-spacing: 0.04em;
+  }
+
+  .btn-trigger { background: var(--accent3); color: #fff; }
+  .btn-trigger:hover { background: #e05555; }
+  .btn-reset { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+  .btn-reset:hover { color: var(--text); }
+
+  .status-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    font-size: 0.8rem;
+  }
+
+  .status-label { color: var(--muted); }
+  .status-val { color: var(--accent); font-weight: 500; }
+  .status-val.warn { color: #ffd700; }
+  .status-val.danger { color: var(--accent3); }
+
+  .idle-timer {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 2rem;
+    color: var(--accent);
+    text-align: center;
+    margin: 1rem 0;
+    transition: color 0.3s;
+  }
+
+  .idle-timer.warn { color: #ffd700; }
+  .idle-timer.danger { color: var(--accent3); }
+
+  .log {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+    height: 140px;
+    overflow-y: auto;
+    line-height: 1.8;
+  }
+
+  .log-entry { padding: 0.1rem 0; }
+  .log-entry.alert { color: var(--accent3); }
+  .log-entry.ok { color: var(--accent); }
+  .log-entry.info { color: var(--accent2); }
+
+  /* ──────────────────────────────────
+     GOALGUARD NUDGE OVERLAY
+     Include everything below this line
+     in your main app. The rest above
+     is just the demo wrapper.
+  ────────────────────────────────── */
+
+  /* Backdrop */
+  #gg-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(6px);
+    z-index: 9998;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  #gg-overlay.visible {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* Nudge card */
+  #gg-card {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -48%) scale(0.95);
+    z-index: 9999;
+    width: 100%;
+    max-width: 420px;
+    background: #13131e;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.35s cubic-bezier(0.34, 1.2, 0.64, 1);
+    box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+  }
+
+  #gg-card.visible {
+    opacity: 1;
+    pointer-events: all;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  /* Intensity styles */
+  #gg-card.nudge { border-color: rgba(0,255,136,0.3); }
+  #gg-card.warning { border-color: rgba(255,215,0,0.4); }
+  #gg-card.alert { border-color: rgba(255,107,107,0.5); }
+
+  .gg-icon {
+    font-size: 2.5rem;
+    text-align: center;
+    margin-bottom: 0.8rem;
+  }
+
+  .gg-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.3rem;
+    text-align: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .gg-subtitle {
+    color: var(--muted);
+    font-size: 0.8rem;
+    text-align: center;
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Goal context block */
+  .gg-goal-block {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1.2rem;
+    font-size: 0.8rem;
+  }
+
+  .gg-goal-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .gg-goal-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.3rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .gg-goal-row:last-child { border-bottom: none; }
+
+  .gg-goal-name { color: var(--text); }
+
+  .gg-goal-status {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+  }
+
+  .status-pending { background: rgba(255,215,0,0.1); color: #ffd700; }
+  .status-done { background: rgba(0,255,136,0.1); color: var(--accent); }
+
+  /* Action buttons */
+  .gg-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .gg-btn {
+    width: 100%;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    padding: 0.85rem;
+    border-radius: 8px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    letter-spacing: 0.04em;
+  }
+
+  .gg-btn-primary {
+    background: var(--accent);
+    color: #000;
+    font-weight: 500;
+  }
+
+  .gg-btn-primary:hover {
+    background: #00e07a;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0,255,136,0.3);
+  }
+
+  .gg-btn-secondary {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+
+  .gg-btn-secondary:hover { color: var(--text); border-color: var(--muted); }
+
+  .gg-dismiss {
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.72rem;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+    width: 100%;
+    padding: 0.4rem;
+    margin-top: 0.3rem;
+    transition: color 0.2s;
+  }
+
+  .gg-dismiss:hover { color: var(--text); }
+
+  /* Progress ring */
+  .gg-ring-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.2rem;
+  }
+
+  .gg-ring {
+    position: relative;
+    width: 72px; height: 72px;
+  }
+
+  .gg-ring svg { transform: rotate(-90deg); }
+
+  .gg-ring-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1rem;
+    color: var(--accent);
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Demo wrapper (remove in production) ── -->
+<div class="demo-page">
+  <div class="demo-header">Learn<span>OS</span> — GoalGuard Demo</div>
+  <div class="demo-sub">
+    GoalGuard watches for inactivity or off-task behavior and fires a contextual nudge.<br>
+    Use the buttons below to simulate different trigger scenarios.
+  </div>
+
+  <div class="demo-controls">
+    <button class="btn btn-trigger" onclick="GoalGuard.trigger('nudge')">🟢 Gentle Nudge</button>
+    <button class="btn btn-trigger" onclick="GoalGuard.trigger('warning')">🟡 Warning</button>
+    <button class="btn btn-trigger" onclick="GoalGuard.trigger('alert')">🔴 Distraction Alert</button>
+    <button class="btn btn-reset" onclick="GoalGuard.dismiss()">Dismiss</button>
+    <button class="btn btn-reset" onclick="GoalGuard.reset()">Reset Timer</button>
+  </div>
+
+  <div class="status-bar">
+    <span class="status-label">GoalGuard Status</span>
+    <span class="status-val" id="gg-status">Watching…</span>
+  </div>
+
+  <div class="idle-timer" id="idle-display">0:00</div>
+
+  <div class="log" id="gg-log">
+    <div class="log-entry info">[ GoalGuard ] Initialized. Watching for inactivity…</div>
+  </div>
+</div>
+
+<!-- ── GOALGUARD NUDGE OVERLAY (keep in production) ── -->
+<div id="gg-overlay" onclick="GoalGuard.dismiss()"></div>
+
+<div id="gg-card" class="nudge">
+  <div class="gg-ring-wrapper">
+    <div class="gg-ring">
+      <svg width="72" height="72" viewBox="0 0 72 72">
+        <circle cx="36" cy="36" r="30" fill="none" stroke="#2a2a3a" stroke-width="4"/>
+        <circle id="gg-ring-circle" cx="36" cy="36" r="30" fill="none"
+          stroke="#00ff88" stroke-width="4"
+          stroke-dasharray="188.5"
+          stroke-dashoffset="47"
+          stroke-linecap="round"/>
+      </svg>
+      <div class="gg-ring-text" id="gg-ring-pct">75%</div>
+    </div>
+  </div>
+
+  <div class="gg-icon" id="gg-icon">🎯</div>
+  <div class="gg-title" id="gg-title">Still with us?</div>
+  <div class="gg-subtitle" id="gg-subtitle">
+    You planned to study today. You're 75% through your daily goal — keep going!
+  </div>
+
+  <div class="gg-goal-block">
+    <div class="gg-goal-label">Today's Goals</div>
+    <div class="gg-goal-row">
+      <span class="gg-goal-name">Review flashcards</span>
+      <span class="gg-goal-status status-done">✓ Done</span>
+    </div>
+    <div class="gg-goal-row">
+      <span class="gg-goal-name">Complete quiz</span>
+      <span class="gg-goal-status status-pending">Pending</span>
+    </div>
+    <div class="gg-goal-row">
+      <span class="gg-goal-name">Hit 80% accuracy</span>
+      <span class="gg-goal-status status-pending">Pending</span>
+    </div>
+  </div>
+
+  <div class="gg-actions">
+    <button class="gg-btn gg-btn-primary" id="gg-cta" onclick="GoalGuard.returnToStudy()">
+      → Continue Studying
+    </button>
+    <button class="gg-btn gg-btn-secondary" onclick="GoalGuard.snooze(5)">
+      Snooze 5 min
+    </button>
+    <button class="gg-dismiss" onclick="GoalGuard.dismiss()">
+      I'll study later
+    </button>
+  </div>
+</div>
+
+
+<!-- ── GOALGUARD SCRIPT ── -->
+<script>
+const GoalGuard = (() => {
+  // ── Config ──
+  const CONFIG = {
+    idleThresholds: {
+      nudge:   2 * 60,   // 2 min idle → gentle nudge
+      warning: 5 * 60,   // 5 min idle → warning
+      alert:   10 * 60,  // 10 min idle → alert
+    },
+    snoozeTime: 5 * 60,   // 5 min snooze
+    studyUrl: '/dashboard', // redirect on "Continue"
+    distractingDomains: [
+      'youtube.com', 'instagram.com', 'twitter.com',
+      'x.com', 'tiktok.com', 'reddit.com', 'netflix.com',
+    ],
+  };
+
+  // ── State ──
+  let idleSeconds = 0;
+  let snoozedUntil = 0;
+  let currentLevel = null;
+  let nudgeFired = { nudge: false, warning: false, alert: false };
+  let timer = null;
+  let active = true;
+
+  // ── DOM refs ──
+  const overlay = document.getElementById('gg-overlay');
+  const card = document.getElementById('gg-card');
+
+  // ── Nudge content by level ──
+  const CONTENT = {
+    nudge: {
+      icon: '🎯',
+      title: 'Still with us?',
+      subtitle: "You planned to study today. You're close to your daily goal — one more push!",
+      cta: '→ Continue Studying',
+      color: '#00ff88',
+    },
+    warning: {
+      icon: '⏳',
+      title: 'Time is slipping…',
+      subtitle: "You've been away for a bit. Your streak is on the line — jump back in now.",
+      cta: '→ Get Back on Track',
+      color: '#ffd700',
+    },
+    alert: {
+      icon: '🚨',
+      title: 'Distraction Detected',
+      subtitle: "Looks like you drifted off-task. Your opponent is still studying. Don't fall behind.",
+      cta: '→ Return to Study',
+      color: '#ff6b6b',
+    },
+  };
+
+  // ── Show nudge ──
+  function show(level) {
+    if (!active) return;
+    const now = Date.now();
+    if (now < snoozedUntil) return;
+
+    currentLevel = level;
+    const c = CONTENT[level];
+
+    document.getElementById('gg-icon').textContent = c.icon;
+    document.getElementById('gg-title').textContent = c.title;
+    document.getElementById('gg-subtitle').textContent = c.subtitle;
+    document.getElementById('gg-cta').textContent = c.cta;
+    document.getElementById('gg-ring-circle').style.stroke = c.color;
+    document.getElementById('gg-ring-pct').style.color = c.color;
+
+    // Update ring based on progress (mock 75%)
+    const progress = 75;
+    const circumference = 188.5;
+    const offset = circumference - (progress / 100) * circumference;
+    document.getElementById('gg-ring-circle').style.strokeDashoffset = offset;
+    document.getElementById('gg-ring-pct').textContent = progress + '%';
+
+    card.className = `visible ${level}`;
+    overlay.classList.add('visible');
+
+    log(`Nudge fired: ${level}`, 'alert');
+    updateStatus(`🔔 ${level.toUpperCase()} nudge shown`, 'danger');
+  }
+
+  // ── Dismiss ──
+  function dismiss() {
+    card.classList.remove('visible');
+    overlay.classList.remove('visible');
+    currentLevel = null;
+    updateStatus('Watching…', 'ok');
+    log('Nudge dismissed', 'ok');
+  }
+
+  // ── Snooze ──
+  function snooze(minutes) {
+    snoozedUntil = Date.now() + minutes * 60000;
+    dismiss();
+    log(`Snoozed for ${minutes} min`, 'info');
+    updateStatus(`Snoozed ${minutes}m`, 'warn');
+  }
+
+  // ── Return to study ──
+  function returnToStudy() {
+    dismiss();
+    reset();
+    log('User returned to study ✓', 'ok');
+    // window.location.href = CONFIG.studyUrl; // uncomment in production
+  }
+
+  // ── Reset idle timer ──
+  function reset() {
+    idleSeconds = 0;
+    nudgeFired = { nudge: false, warning: false, alert: false };
+    updateStatus('Watching…', 'ok');
+  }
+
+  // ── Manual trigger (for demo) ──
+  function trigger(level) {
+    show(level);
+  }
+
+  // ── Idle tracking ──
+  function tick() {
+    if (!active) return;
+    if (Date.now() < snoozedUntil) return;
+    if (currentLevel) return; // nudge already showing
+
+    idleSeconds++;
+    updateTimerDisplay(idleSeconds);
+
+    const t = CONFIG.idleThresholds;
+    if (idleSeconds >= t.alert && !nudgeFired.alert) {
+      nudgeFired.alert = true;
+      show('alert');
+    } else if (idleSeconds >= t.warning && !nudgeFired.warning) {
+      nudgeFired.warning = true;
+      show('warning');
+    } else if (idleSeconds >= t.nudge && !nudgeFired.nudge) {
+      nudgeFired.nudge = true;
+      show('nudge');
+    }
+
+    // Update status color
+    if (idleSeconds >= t.warning) updateStatus(`Idle: ${fmt(idleSeconds)}`, 'danger');
+    else if (idleSeconds >= t.nudge) updateStatus(`Idle: ${fmt(idleSeconds)}`, 'warn');
+  }
+
+  // ── Activity detection ──
+  ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => {
+    document.addEventListener(evt, () => {
+      if (currentLevel) return; // don't reset while nudge is showing
+      idleSeconds = 0;
+      nudgeFired = { nudge: false, warning: false, alert: false };
+    }, { passive: true });
+  });
+
+  // ── Helpers ──
+  function fmt(s) {
+    const m = Math.floor(s / 60), sec = s % 60;
+    return `${m}:${String(sec).padStart(2, '0')}`;
+  }
+
+  function updateTimerDisplay(s) {
+    const el = document.getElementById('idle-display');
+    if (!el) return;
+    el.textContent = fmt(s);
+    el.className = 'idle-timer' +
+      (s >= CONFIG.idleThresholds.warning ? ' danger' :
+       s >= CONFIG.idleThresholds.nudge ? ' warn' : '');
+  }
+
+  function updateStatus(msg, type) {
+    const el = document.getElementById('gg-status');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'status-val' + (type !== 'ok' ? ` ${type}` : '');
+  }
+
+  function log(msg, type = 'info') {
+    const logEl = document.getElementById('gg-log');
+    if (!logEl) return;
+    const entry = document.createElement('div');
+    entry.className = `log-entry ${type}`;
+    entry.textContent = `[ ${new Date().toLocaleTimeString()} ] ${msg}`;
+    logEl.appendChild(entry);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  // ── Start ──
+  timer = setInterval(tick, 1000);
+  log('GoalGuard active. Thresholds: nudge=2m, warn=5m, alert=10m', 'info');
+
+  return { show, dismiss, snooze, returnToStudy, reset, trigger };
+})();
+</script>
+</body>
+</html>
